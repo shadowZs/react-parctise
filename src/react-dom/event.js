@@ -1,3 +1,5 @@
+import { setBatchingUpdate, flushDirtyComponents } from "../react";
+
 const eventTypeMethods = {
   click: {
     capture: "onClickCapture",
@@ -68,6 +70,8 @@ export function setEventDelegation(container) {
           const paths = syntheticEvent.composedPath();
           const elements = phase === "capture" ? paths.reverse() : paths;
           const methodName = eventTypeMethods[eventType]?.[phase];
+          // in react event, the batch update is true
+          setBatchingUpdate(true);
 
           for (let element of elements) {
             if (syntheticEvent.isPropagationStoped()) {
@@ -79,6 +83,10 @@ export function setEventDelegation(container) {
               element.reactEvents?.[methodName]?.(syntheticEvent);
             }
           }
+
+          // batch update dirty component and init the isBatchingUpdate
+          setBatchingUpdate(false);
+          flushDirtyComponents();
         },
         phase === "capture"
       );

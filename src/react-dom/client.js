@@ -58,7 +58,6 @@ function createClassComponent(vdom) {
   // as forceUpdate can't get vdom, so mount the oldRenderVdom in instance
   instance.oldRenderVdom = renderVdom;
   vdom.instance = instance;
-  console.log("domElement ==>", domElement);
   return domElement;
 }
 
@@ -119,7 +118,6 @@ function updateProps(domElement, oldProps = {}, newProps = {}) {
 function mountChildren(vdom, parentDOM) {
   const children = vdom?.props?.children || [];
   const childrenArray = wrapToArray(children);
-  // console.log("children ==>", children, childrenArray);
   childrenArray.forEach((child) => {
     mountVdom(wrapToVdom(child), parentDOM);
   });
