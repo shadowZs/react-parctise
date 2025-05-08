@@ -1,4 +1,5 @@
 import { getDOMElementByVdom, createDOMElement } from "../react-dom/client";
+import { REACT_FORWARDREF } from "../react-dom/constants";
 
 let isBathingUpdate = false;
 
@@ -15,9 +16,11 @@ export function flushDirtyComponents() {
 }
 
 function createElement(type, config, ...children) {
-  const props = { ...config, children: Array.from(children) };
+  const { ref, ...others } = config;
+  const props = { ...others, children: Array.from(children) };
   return {
     type,
+    ref,
     props,
   };
 }
@@ -78,6 +81,19 @@ class Component {
   }
 }
 
-const React = { createElement, Component };
+function createRef(initialValue) {
+  return {
+    current: initialValue,
+  };
+}
+
+function forwardRef(render) {
+  return {
+    $$typeof: REACT_FORWARDREF,
+    render,
+  };
+}
+
+const React = { createElement, Component, createRef, forwardRef };
 
 export default React;

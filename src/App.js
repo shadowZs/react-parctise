@@ -1,38 +1,35 @@
 import React from "./react";
 
+// class Child extends React.Component {
+//   render() {
+//     return <div className="child">child</div>;
+//   }
+// }
+
+function Child(props, forwardRef) {
+  return <input ref={forwardRef} />;
+}
+
+const ForwardChildRef = React.forwardRef(Child);
+
 class App extends React.Component {
   state = {
     count: 0,
   };
+
+  inputRef = React.createRef();
+  childRef = React.createRef();
+
   handleClick = () => {
-    this.setState((state) => ({
-      count: state.count + 1,
-    }));
-
-    console.log("setState1 =>", this.state);
-    this.setState({
-      count: this.state.count + 1,
-    });
-
-    console.log("setState2 =>", this.state);
-
-    setTimeout(() => {
-      this.setState({
-        count: this.state.count + 1,
-      });
-      console.log("setTimout1 =>", this.state);
-
-      this.setState({
-        count: this.state.count + 1,
-      });
-      console.log("setTimout2 =>", this.state);
-    });
+    this.childRef.current.focus();
   };
 
   render() {
     return (
       <div>
-        <button onClick={this.handleClick}>+ {this.state.count}</button>
+        <input ref={this.inputRef} />
+        <ForwardChildRef ref={this.childRef} />
+        <button onClick={this.handleClick}>click</button>
       </div>
     );
   }

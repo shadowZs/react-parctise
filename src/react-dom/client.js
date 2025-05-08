@@ -1,4 +1,4 @@
-import { REACT_TEXT } from "./constants";
+import { REACT_TEXT, REACT_FORWARDREF } from "./constants";
 import { isUndefined, wrapToArray, wrapToVdom } from "./util";
 import { setEventDelegation } from "./event";
 
@@ -23,8 +23,10 @@ function mountVdom(vdom, parentDOM) {
 // convert vdom to real dom
 export function createDOMElement(vdom) {
   if (isUndefined(vdom)) return null;
-
   const { type } = vdom;
+  if (type?.$$typeof === REACT_FORWARDREF) {
+    return createForwardComponent(vdom);
+  }
   if (vdom?.$$typeof === REACT_TEXT) {
     return createTextComponent(vdom);
   } else if (typeof type === "function") {
@@ -47,12 +49,25 @@ function createTextComponent(vdom) {
   return document.createTextNode(vdom.props);
 }
 
+function createForwardComponent(vdom) {
+  const { type, props, ref } = vdom;
+  const { render } = type;
+  const renderVdom = render(props, ref);
+
+  vdom.oldRenderVdom = renderVdom;
+  return createDOMElement(renderVdom);
+}
+
 function createClassComponent(vdom) {
-  const { type, props } = vdom;
+  const { type, props, ref } = vdom;
   const instance = new type(props);
   const renderVdom = instance.render();
 
   const domElement = createDOMElement(renderVdom);
+
+  if (ref) {
+    ref.current = instance;
+  }
 
   // save renderVdom and instance in instance to force update
   // as forceUpdate can't get vdom, so mount the oldRenderVdom in instance
@@ -71,11 +86,15 @@ function createFunctionComponent(vdom) {
 }
 
 function createNativeComponent(vdom) {
-  const { type, props } = vdom;
+  const { type, props, ref } = vdom;
 
   const domElement = document.createElement(type);
 
   vdom.domElement = domElement;
+
+  if (ref) {
+    ref.current = domElement;
+  }
 
   updateProps(domElement, {}, props);
   mountChildren(vdom, domElement);
