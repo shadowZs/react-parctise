@@ -66,6 +66,7 @@ function createNativeComponent(vdom) {
   const { type, props } = vdom;
 
   const domElement = document.createElement(type);
+  console.log("props ==>", props);
   updateProps(domElement, {}, props);
   mountChildren(vdom, domElement);
   return domElement;
@@ -94,11 +95,10 @@ function updateProps(domElement, oldProps = {}, newProps = {}) {
     if (name === "style") {
       Object.assign(domElement.style, newProps.style);
     } else if (name.startsWith("on")) {
-      if (!domElement.reactEvent) {
-        domElement.reactEvent = {};
-      } else {
-        domElement.reactEvent[name] = newProps[name];
+      if (!domElement.reactEvents) {
+        domElement.reactEvents = {};
       }
+      domElement.reactEvents[name] = newProps[name];
     } else {
       domElement[name] = newProps[name];
     }

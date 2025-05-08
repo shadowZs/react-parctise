@@ -7,6 +7,53 @@ const eventTypeMethods = {
 
 const phases = ["capture", "bubble"];
 
+function createSyntheticEvent(nativeEvent) {
+  let isDefaultPrevented = false;
+  let isPropagationStoped = false;
+  const target = {
+    nativeEvent,
+    preventDefault() {
+      if (nativeEvent.preventDefault) {
+        nativeEvent.preventDefault();
+      } else {
+        nativeEvent.returnValue = false;
+      }
+
+      isDefaultPrevented = true;
+    },
+    stopPropagation() {
+      if (nativeEvent.stopPropagation) {
+        nativeEvent.stopPropagation();
+      } else {
+        nativeEvent.cancelBubble = true;
+      }
+
+      isPropagationStoped = true;
+    },
+    isDefaultPrevented() {
+      return isDefaultPrevented;
+    },
+    isPropagationStoped() {
+      return isPropagationStoped;
+    },
+  };
+
+  const handler = {
+    get(target, key) {
+      if (target.hasOwnProperty(key)) {
+        return Reflect.get(target, key);
+      } else {
+        const value = Reflect.get(nativeEvent, key);
+
+        // why need to make sure this point to native event?
+        return typeof value === "function" ? value.bind(nativeEvent) : value;
+      }
+    },
+  };
+
+  return new Proxy(target, handler);
+}
+
 /**
  * set event delegation
  * @param {*} container
@@ -14,15 +61,27 @@ const phases = ["capture", "bubble"];
 export function setEventDelegation(container) {
   Reflect.ownKeys(eventTypeMethods).forEach((eventType) => {
     phases.forEach((phase) => {
-      container.addEventListener(eventType, (nativeEvent) => {
-        const paths = nativeEvent.composedPath();
-        console.log("path ===>", paths);
-        const elements = phase === "capture" ? paths.reverse() : paths;
-        for (let element of elements) {
+      container.addEventListener(
+        eventType,
+        (nativeEvent) => {
+          const syntheticEvent = createSyntheticEvent(nativeEvent);
+          const paths = syntheticEvent.composedPath();
+          const elements = phase === "capture" ? paths.reverse() : paths;
           const methodName = eventTypeMethods[eventType]?.[phase];
-          element.reactEvents?.[methodName]?.(nativeEvent);
-        }
-      });
+
+          for (let element of elements) {
+            if (syntheticEvent.isPropagationStoped()) {
+              break;
+            }
+            syntheticEvent.currentTarget = element;
+
+            if (element.reactEvents?.[methodName]) {
+              element.reactEvents?.[methodName]?.(syntheticEvent);
+            }
+          }
+        },
+        phase === "capture"
+      );
     });
   });
 }
