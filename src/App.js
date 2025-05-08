@@ -1,28 +1,22 @@
-function App() {
-  const containerClick = () => {
-    console.log("containerClick ");
+import React from "./react";
+
+class App extends React.Component {
+  state = {
+    count: 0,
+  };
+  handleClick = () => {
+    this.setState((state) => ({
+      count: state.count + 1,
+    }));
   };
 
-  const parentClick = () => {
-    console.log("parentClick ");
-  };
-
-  const childClick = (e) => {
-    console.log("childClick");
-    e.stopPropagation();
-  };
-
-  return (
-    <div onClick={containerClick}>
-      containerClick
-      <div className="parent" onClick={parentClick}>
-        this is a parent
-        <div className="child" onClick={childClick}>
-          this is a child
-        </div>
+  render() {
+    return (
+      <div>
+        <button onClick={this.handleClick}>+ {this.state.count}</button>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 export default App;

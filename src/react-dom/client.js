@@ -21,7 +21,7 @@ function mountVdom(vdom, parentDOM) {
 }
 
 // convert vdom to real dom
-function createDOMElement(vdom) {
+export function createDOMElement(vdom) {
   if (isUndefined(vdom)) return null;
 
   const { type } = vdom;
@@ -51,7 +51,14 @@ function createClassComponent(vdom) {
   const { type, props } = vdom;
   const instance = new type(props);
   const renderVdom = instance.render();
+
   const domElement = createDOMElement(renderVdom);
+
+  // save renderVdom and instance in instance to force update
+  // as forceUpdate can't get vdom, so mount the oldRenderVdom in instance
+  instance.oldRenderVdom = renderVdom;
+  vdom.instance = instance;
+  console.log("domElement ==>", domElement);
   return domElement;
 }
 
@@ -59,6 +66,8 @@ function createFunctionComponent(vdom) {
   const { type, props } = vdom;
   const renderVdom = type(props);
   const domElement = createDOMElement(renderVdom);
+
+  vdom.oldRenderVdom = renderVdom;
   return domElement;
 }
 
@@ -66,7 +75,9 @@ function createNativeComponent(vdom) {
   const { type, props } = vdom;
 
   const domElement = document.createElement(type);
-  console.log("props ==>", props);
+
+  vdom.domElement = domElement;
+
   updateProps(domElement, {}, props);
   mountChildren(vdom, domElement);
   return domElement;
@@ -112,6 +123,30 @@ function mountChildren(vdom, parentDOM) {
   childrenArray.forEach((child) => {
     mountVdom(wrapToVdom(child), parentDOM);
   });
+}
+
+/**
+ *
+ * @param {*} vdom
+ * @returns dom elements
+ */
+
+export function getDOMElementByVdom(vdom) {
+  if (isUndefined(vdom)) {
+    return null;
+  }
+
+  const { type } = vdom;
+  if (typeof type === "function") {
+    if (type.isReactComponent) {
+      const instance = vdom.instance;
+      return getDOMElementByVdom(instance.oldRenderVdom);
+    }
+
+    return getDOMElementByVdom(vdom.oldRenderVdom);
+  }
+
+  return vdom.domElement;
 }
 
 const ReactDOM = {
