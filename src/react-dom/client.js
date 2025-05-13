@@ -324,6 +324,26 @@ export function useState(initialState) {
   return useReducer((state, action) => action, initialState);
 }
 
+export function useMemo(factory, deps) {
+  const { hooks } = currentVdom;
+  const { hookIndex, hookStates } = hooks;
+  if (isUndefined(hookStates[hookIndex])) {
+    const newMemo = factory();
+    hookStates[hooks.hookIndex++] = [newMemo, deps];
+    return newMemo;
+  }
+
+  const [oldMemo, oldDeps] = hookStates[hookIndex];
+  if (oldDeps.every((dep, index) => dep === deps[index])) {
+    hooks.hookIndex++;
+    return oldMemo;
+  }
+}
+
+export function useCallback(callback, deps) {
+  return useMemo(() => callback, deps);
+}
+
 const ReactDOM = {
   createRoot,
 };

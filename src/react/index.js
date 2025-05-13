@@ -2,11 +2,10 @@ import {
   getDOMElementByVdom,
   createDOMElement,
   compareVdom,
-  useReducer,
-  useState,
 } from "../react-dom/client";
 import { REACT_FORWARDREF, REACT_CONTEXT } from "../react-dom/constants";
 import { isDefined, isUndefined, wrapToVdom } from "../react-dom/util";
+import * as hooks from "../react-dom/client";
 
 let isBathingUpdate = false;
 
@@ -148,8 +147,7 @@ const React = {
   forwardRef,
   createContext,
   useContext,
-  useReducer,
-  useState,
+  ...hooks,
 };
 
 export default React;
