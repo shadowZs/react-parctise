@@ -344,11 +344,12 @@ export function useCallback(callback, deps) {
   return useMemo(() => callback, deps);
 }
 
-export function useEffect(effect, deps) {
+function applyEffectHook(effect, deps, scheduleTask) {
   const { hooks } = currentVdom;
   const { hookIndex, hookStates } = hooks;
   const preEffect = hookStates[hookIndex];
-  const [preClearUp, preDeps] = preEffect;
+  const [preClearUp, preDeps] = preEffect || [];
+
   let shouldUpdate = true;
 
   if (preEffect) {
@@ -356,13 +357,21 @@ export function useEffect(effect, deps) {
   }
 
   if (shouldUpdate) {
-    setTimeout(() => {
+    scheduleTask(() => {
       preClearUp?.();
-      const currentEffect = effect();
-      hookStates[hooks.hookIndex++] = [currentEffect, deps];
+      const clearUp = effect();
+      hookStates[hookIndex] = [clearUp, deps];
     });
   }
   hooks.hookIndex++;
+}
+
+export function useEffect(effect, deps) {
+  applyEffectHook(effect, deps, setTimeout);
+}
+
+export function useLayoutEffect(layoutEffect, deps) {
+  applyEffectHook(layoutEffect, deps, queueMicrotask);
 }
 
 const ReactDOM = {
