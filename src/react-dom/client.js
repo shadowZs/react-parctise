@@ -319,6 +319,11 @@ export function useReducer(reducer, initialState) {
 
   return [hookStates[hooks.hookIndex++], dispatch];
 }
+
+export function useState(initialState) {
+  return useReducer((state, action) => action, initialState);
+}
+
 const ReactDOM = {
   createRoot,
 };

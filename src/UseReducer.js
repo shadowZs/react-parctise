@@ -13,7 +13,7 @@ function UserReducer() {
   }
 
   const [count, dispatch] = React.useReducer(reducer, 0);
-  console.log(count);
+
   function handleClick() {
     dispatch({ type: "add" });
   }
@@ -21,7 +21,7 @@ function UserReducer() {
   return (
     <div>
       <button onClick={handleClick}>Add</button>
-      {count}
+      <span>{count}</span>
     </div>
   );
 }

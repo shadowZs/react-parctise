@@ -3,6 +3,7 @@ import {
   createDOMElement,
   compareVdom,
   useReducer,
+  useState,
 } from "../react-dom/client";
 import { REACT_FORWARDREF, REACT_CONTEXT } from "../react-dom/constants";
 import { isDefined, isUndefined, wrapToVdom } from "../react-dom/util";
@@ -148,6 +149,7 @@ const React = {
   createContext,
   useContext,
   useReducer,
+  useState,
 };
 
 export default React;
