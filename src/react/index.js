@@ -3,7 +3,7 @@ import {
   createDOMElement,
   compareVdom,
 } from "../react-dom/client";
-import { REACT_FORWARDREF } from "../react-dom/constants";
+import { REACT_FORWARDREF, REACT_CONTEXT } from "../react-dom/constants";
 import { isDefined, isUndefined, wrapToVdom } from "../react-dom/util";
 
 let isBathingUpdate = false;
@@ -119,6 +119,28 @@ function forwardRef(render) {
   };
 }
 
-const React = { createElement, Component, createRef, forwardRef };
+function createContext(defaultValue) {
+  const context = {
+    type: REACT_CONTEXT,
+    _currentValue: defaultValue,
+    Provider: (props) => {
+      context._currentValue = props.value;
+      return props.children;
+    },
+    Consumer: (props) => {
+      return props.children(context._currentValue);
+    },
+  };
+
+  return context;
+}
+
+const React = {
+  createElement,
+  Component,
+  createRef,
+  forwardRef,
+  createContext,
+};
 
 export default React;

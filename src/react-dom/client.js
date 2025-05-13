@@ -13,14 +13,12 @@ function createRoot(container) {
 
 // convert vdom to real dom
 export function createDOMElement(vdom) {
-  console.log("vdom ==>", vdom);
   if (isUndefined(vdom)) return null;
   const { type } = vdom;
   if (type?.$$typeof === REACT_FORWARDREF) {
     return createForwardComponent(vdom);
   }
   if (vdom?.$$typeof === REACT_TEXT) {
-    console.log("create text component");
     return createTextComponent(vdom);
   } else if (typeof type === "function") {
     // isReactComponent figure out it's a class component
@@ -62,7 +60,7 @@ function createClassComponent(vdom) {
 
   const domElement = createDOMElement(renderVdom);
 
-  domElement.componentDidMount = instance.componentDidMount;
+  // domElement.componentDidMount = instance?.componentDidMount;
 
   if (ref) {
     ref.current = instance;
