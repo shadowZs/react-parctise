@@ -2,13 +2,27 @@ import { REACT_TEXT, REACT_FORWARDREF } from "./constants";
 import { isUndefined, isDefined, wrapToArray, wrapToVdom } from "./util";
 import { setEventDelegation } from "./event";
 
+let currentVdom = null;
+let currentRoot = null;
+let currentRootVdom = null;
 function createRoot(container) {
-  return {
+  const root = {
     render(rootVdom) {
+      currentRootVdom = rootVdom;
+
       mountVdom(rootVdom, container);
       setEventDelegation(container);
     },
+
+    // update root vdom when hooks changed
+    update() {
+      compareVdom(container, currentRootVdom, currentRootVdom);
+    },
   };
+
+  currentRoot = root;
+
+  return root;
 }
 
 // convert vdom to real dom
@@ -75,6 +89,16 @@ function createClassComponent(vdom) {
 
 function createFunctionComponent(vdom) {
   const { type, props } = vdom;
+
+  if (!vdom.hooks) {
+    vdom.hooks = {
+      hookIndex: 0,
+      hookStates: [],
+    };
+  }
+
+  currentVdom = vdom;
+
   const renderVdom = type(props);
   const domElement = createDOMElement(renderVdom);
 
@@ -190,13 +214,13 @@ export function compareVdom(parentDOM, oldRenderVdom, newRenderVdom) {
 }
 
 function updateVdom(oldVdom, newVdom) {
-  console.log("update vdom", oldVdom, newVdom);
+  // console.log("update vdom", oldVdom, newVdom);
   const { type } = oldVdom;
   if (type?.$$typeof === REACT_FORWARDREF) {
     updateForwardComponent(oldVdom, newVdom);
   } else if (typeof type === "string") {
     updateNativeComponent(oldVdom, newVdom);
-  } else if (typeof newVdom === REACT_TEXT) {
+  } else if (typeof newVdom === "string" || typeof newVdom === "number") {
     console.log("update text component", newVdom, oldVdom);
     updateTextComponent(oldVdom, newVdom);
   } else if (typeof type === "function") {
@@ -235,6 +259,11 @@ function updateClassComponent(oldVdom, newVdom) {
 }
 
 function updateFunctionComponent(oldVdom, newVdom) {
+  // reset hooks index when function component update
+  const hooks = (newVdom.hooks = oldVdom.hooks);
+  hooks.hookIndex = 0;
+  currentVdom = newVdom;
+
   const { type, props } = newVdom;
   const newRenderVdom = type(props);
   const parentDOM = getParentDOMByVdom(oldVdom);
@@ -270,6 +299,26 @@ function mountVdom(vdom, parentDOM) {
   domElement.componentDidMount?.();
 }
 
+/**
+ *
+ * @param {*} reducer
+ * @param {*} initialState
+ * @returns
+ */
+export function useReducer(reducer, initialState) {
+  const { hooks } = currentVdom;
+  const { hookIndex, hookStates } = hooks;
+  const hookState = hookStates[hookIndex];
+  if (isUndefined(hookState)) {
+    hookStates[hookIndex] = initialState;
+  }
+  function dispatch(action) {
+    hookStates[hookIndex] = reducer(hookStates[hookIndex], action);
+    currentRoot.update();
+  }
+
+  return [hookStates[hooks.hookIndex++], dispatch];
+}
 const ReactDOM = {
   createRoot,
 };

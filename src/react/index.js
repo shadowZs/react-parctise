@@ -2,6 +2,7 @@ import {
   getDOMElementByVdom,
   createDOMElement,
   compareVdom,
+  useReducer,
 } from "../react-dom/client";
 import { REACT_FORWARDREF, REACT_CONTEXT } from "../react-dom/constants";
 import { isDefined, isUndefined, wrapToVdom } from "../react-dom/util";
@@ -146,6 +147,7 @@ const React = {
   forwardRef,
   createContext,
   useContext,
+  useReducer,
 };
 
 export default React;
