@@ -4,11 +4,18 @@ const Context = React.createContext();
 const { Provider, Consumer } = Context;
 
 class Child extends React.Component {
+  useContextValue = React.useContext(Context);
+
   render() {
     return (
       <Consumer>
         {({ name }) => {
-          return <div>{name}</div>;
+          return (
+            <div>
+              <div>consumer value: {name}</div>
+              <div>useContext value: {this.useContextValue.name}</div>
+            </div>
+          );
         }}
       </Consumer>
     );

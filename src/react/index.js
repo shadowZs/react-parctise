@@ -135,12 +135,17 @@ function createContext(defaultValue) {
   return context;
 }
 
+function useContext(context) {
+  return context._currentValue;
+}
+
 const React = {
   createElement,
   Component,
   createRef,
   forwardRef,
   createContext,
+  useContext,
 };
 
 export default React;
