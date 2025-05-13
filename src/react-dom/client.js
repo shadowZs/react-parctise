@@ -1,5 +1,5 @@
 import { REACT_TEXT, REACT_FORWARDREF } from "./constants";
-import { isUndefined, wrapToArray, wrapToVdom } from "./util";
+import { isUndefined, isDefined, wrapToArray, wrapToVdom } from "./util";
 import { setEventDelegation } from "./event";
 
 function createRoot(container) {
@@ -11,23 +11,16 @@ function createRoot(container) {
   };
 }
 
-function mountVdom(vdom, parentDOM) {
-  if (!vdom) {
-    return;
-  }
-
-  const domElement = createDOMElement(vdom);
-  parentDOM.appendChild(domElement);
-}
-
 // convert vdom to real dom
 export function createDOMElement(vdom) {
+  console.log("vdom ==>", vdom);
   if (isUndefined(vdom)) return null;
   const { type } = vdom;
   if (type?.$$typeof === REACT_FORWARDREF) {
     return createForwardComponent(vdom);
   }
   if (vdom?.$$typeof === REACT_TEXT) {
+    console.log("create text component");
     return createTextComponent(vdom);
   } else if (typeof type === "function") {
     // isReactComponent figure out it's a class component
@@ -46,7 +39,9 @@ export function createDOMElement(vdom) {
  * @returns domElement
  */
 function createTextComponent(vdom) {
-  return document.createTextNode(vdom.props);
+  const domElement = document.createTextNode(vdom.props);
+  vdom.domElement = domElement;
+  return domElement;
 }
 
 function createForwardComponent(vdom) {
@@ -61,9 +56,13 @@ function createForwardComponent(vdom) {
 function createClassComponent(vdom) {
   const { type, props, ref } = vdom;
   const instance = new type(props);
+  instance?.componentWillMount?.();
+
   const renderVdom = instance.render();
 
   const domElement = createDOMElement(renderVdom);
+
+  domElement.componentDidMount = instance.componentDidMount;
 
   if (ref) {
     ref.current = instance;
@@ -135,10 +134,12 @@ function updateProps(domElement, oldProps = {}, newProps = {}) {
 }
 
 function mountChildren(vdom, parentDOM) {
-  const children = vdom?.props?.children || [];
+  let children = vdom?.props?.children || [];
+
   const childrenArray = wrapToArray(children);
-  childrenArray.forEach((child) => {
-    mountVdom(wrapToVdom(child), parentDOM);
+  children = childrenArray.forEach((child) => {
+    child = wrapToVdom(child);
+    mountVdom(child, parentDOM);
   });
 }
 
@@ -164,6 +165,111 @@ export function getDOMElementByVdom(vdom) {
   }
 
   return vdom.domElement;
+}
+
+export function compareVdom(parentDOM, oldRenderVdom, newRenderVdom) {
+  if (isUndefined(oldRenderVdom) && isUndefined(newRenderVdom)) {
+    return null;
+  } else if (isUndefined(oldRenderVdom) && isDefined(newRenderVdom)) {
+    unMountVdom(oldRenderVdom);
+    mountVdom(newRenderVdom, parentDOM);
+  } else if (isDefined(oldRenderVdom) && isUndefined(newRenderVdom)) {
+    unMountVdom(oldRenderVdom);
+  } else if (
+    isDefined(oldRenderVdom) &&
+    isDefined(newRenderVdom) &&
+    oldRenderVdom.type !== newRenderVdom.type
+  ) {
+    unMountVdom(oldRenderVdom);
+    mountVdom(newRenderVdom, parentDOM);
+  } else if (
+    isDefined(oldRenderVdom) &&
+    isDefined(newRenderVdom) &&
+    oldRenderVdom.type === newRenderVdom.type
+  ) {
+    updateVdom(oldRenderVdom, newRenderVdom);
+  }
+}
+
+function updateVdom(oldVdom, newVdom) {
+  console.log("update vdom", oldVdom, newVdom);
+  const { type } = oldVdom;
+  if (type?.$$typeof === REACT_FORWARDREF) {
+    updateForwardComponent(oldVdom, newVdom);
+  } else if (typeof type === "string") {
+    updateNativeComponent(oldVdom, newVdom);
+  } else if (typeof newVdom === REACT_TEXT) {
+    console.log("update text component", newVdom, oldVdom);
+    updateTextComponent(oldVdom, newVdom);
+  } else if (typeof type === "function") {
+    if (type.isReactComponent) {
+      updateClassComponent(oldVdom, newVdom);
+    } else {
+      updateFunctionComponent(oldVdom, newVdom);
+    }
+  }
+}
+
+function updateForwardComponent(oldVdom, newVdom) {
+  const { type, props, ref } = newVdom;
+  const { render } = type;
+  const newRenderVdom = render(props, ref);
+  const parentDOM = getParentDOMByVdom(oldVdom);
+  compareVdom(parentDOM, oldVdom.oldRenderVdom, newRenderVdom);
+}
+
+function updateNativeComponent(oldVdom, newVdom) {
+  const domElement = getDOMElementByVdom(oldVdom);
+  updateProps(domElement, newVdom.props, oldVdom.props);
+  updateChildren(domElement, newVdom.props.children, oldVdom.props.children);
+}
+
+function updateTextComponent(oldVdom, newVdom) {
+  const domElement = (newVdom.domElement = getDOMElementByVdom(oldVdom));
+  if (oldVdom.props !== newVdom.props) {
+    domElement.textContent = newVdom.props;
+  }
+}
+
+function updateClassComponent(oldVdom, newVdom) {
+  const instance = (newVdom.instance = oldVdom.instance);
+  instance.emitUpdate(newVdom.props);
+}
+
+function updateFunctionComponent(oldVdom, newVdom) {
+  const { type, props } = newVdom;
+  const newRenderVdom = type(props);
+  const parentDOM = getParentDOMByVdom(oldVdom);
+  compareVdom(parentDOM, oldVdom.oldRenderVdom, newRenderVdom);
+}
+
+function updateChildren(domElement, newVChildren, oldVChildren) {
+  const oldChildrenArray = wrapToArray(oldVChildren);
+  const newChildrenArray = wrapToArray(newVChildren);
+  const maxLength = Math.max(oldChildrenArray.length, newChildrenArray.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    compareVdom(domElement, oldChildrenArray[i], newChildrenArray[i]);
+  }
+}
+
+function getParentDOMByVdom(vdom) {
+  return getDOMElementByVdom(vdom)?.parentNode;
+}
+function unMountVdom(vdom) {
+  const domElement = vdom.domElement;
+  domElement.remove();
+}
+
+function mountVdom(vdom, parentDOM) {
+  if (!vdom) {
+    return;
+  }
+
+  const domElement = createDOMElement(vdom);
+  parentDOM.appendChild(domElement);
+
+  domElement.componentDidMount?.();
 }
 
 const ReactDOM = {
