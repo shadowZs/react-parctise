@@ -344,6 +344,27 @@ export function useCallback(callback, deps) {
   return useMemo(() => callback, deps);
 }
 
+export function useEffect(effect, deps) {
+  const { hooks } = currentVdom;
+  const { hookIndex, hookStates } = hooks;
+  const preEffect = hookStates[hookIndex];
+  const [preClearUp, preDeps] = preEffect;
+  let shouldUpdate = true;
+
+  if (preEffect) {
+    shouldUpdate = preDeps.every((dep, index) => dep === deps[index]);
+  }
+
+  if (shouldUpdate) {
+    setTimeout(() => {
+      preClearUp?.();
+      const currentEffect = effect();
+      hookStates[hooks.hookIndex++] = [currentEffect, deps];
+    });
+  }
+  hooks.hookIndex++;
+}
+
 const ReactDOM = {
   createRoot,
 };
