@@ -1,4 +1,5 @@
 export * from "./bindActionCreator";
+export * from "./combineReducers";
 
 export const legacy_createStore = (reducer, preState) => {
   let state = preState;

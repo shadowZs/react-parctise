@@ -1,34 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { legacy_createStore as createStore, bindActionCreators } from "./redux";
-let initialState = { count: 0 };
-const reducer = (state = initialState, action) => {
-  switch (action.type) {
-    case "INCREMENT":
-      return { count: state.count + 1 };
-    case "DECREMENT":
-      return { count: state.count - 1 };
-    default:
-      return state;
-  }
+import reducer from "./reducers";
+const store = createStore(reducer);
+
+const actionCreators = {
+  increment: () => ({ type: "INCREMENT" }),
+  decrement: () => ({ type: "DECREMENT" }),
+  add: () => ({ type: "ADD" }),
+  sub: () => ({ type: "MINUS" }),
 };
 
 function Redux() {
-  const [count, setCount] = useState(0);
+  const [state, setState] = useState({});
 
-  const store = createStore(reducer);
-  store.subscribe(() => {
-    setCount(store.getState().count);
-  });
-
-  const add = () => ({ type: "INCREMENT" });
-
-  const sub = () => ({ type: "DECREMENT" });
-
-  const actionCreators = {
-    add,
-    sub,
-  };
+  useEffect(() => {
+    store.subscribe(() => {
+      setState(store.getState());
+    });
+  }, []);
 
   const boundActionCreators = bindActionCreators(
     actionCreators,
@@ -37,9 +27,16 @@ function Redux() {
 
   return (
     <div>
-      <h1>Redux {count}</h1>
+      <h1>count1: {state?.count1?.count}</h1>
+      <button onClick={boundActionCreators.increment}> Add </button>
+      <button onClick={boundActionCreators.decrement}> sub </button>
+      <br />
+
+      <h1>count2 {state.count2?.count}</h1>
       <button onClick={boundActionCreators.add}> Add </button>
       <button onClick={boundActionCreators.sub}> sub </button>
+
+      <br />
     </div>
   );
 }
