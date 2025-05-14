@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 // import App from "./ReactLifeCycle";
 // import App from "./UseReducer";
-import App from "./router";
+import App from "./ReduxComponent";
 // import reportWebVitals from "./reportWebVitals";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
