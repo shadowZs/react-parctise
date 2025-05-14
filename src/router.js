@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-
+import { BrowserRouter } from "./react-router-dom";
+import { Route, Routes } from "./react-router";
 function Router() {
   useEffect(() => {
     window.addEventListener("popstate", () => {
@@ -14,13 +15,13 @@ function Router() {
   };
 
   return (
-    <div>
-      <button onClick={() => jump("/a")}>a</button>
-      <br />
-      <button onClick={() => jump("/b")}>b</button>
-
-      <div id="app"></div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<div>Home</div>} />
+        <Route path="/user" element={<div>User</div>} />
+        <Route path="/profile" element={<div>Profile</div>} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
