@@ -136,7 +136,7 @@ function createContext(defaultValue) {
   return context;
 }
 
-function useContext(context) {
+export function useContext(context) {
   return context._currentValue;
 }
 

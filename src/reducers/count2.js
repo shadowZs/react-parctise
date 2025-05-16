@@ -1,9 +1,9 @@
-export default function count2(state = { count: 1 }, action) {
+export default function count2(state = 0, action) {
   switch (action.type) {
     case "ADD":
-      return { count: state.count + 1 };
+      return state + 1;
     case "MINUS":
-      return { count: state.count - 1 };
+      return state - 1;
     default:
       return state;
   }
