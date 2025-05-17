@@ -41,6 +41,40 @@ export function useSelector(selector) {
 
 export function useDispatch() {
   const { store } = React.useContext(ReactReduxContext);
-  console.log("store ===>", store.dispatch);
   return store.dispatch;
+}
+
+export function compose(...funcs) {
+  if (funcs.length === 0) return (arg) => arg;
+
+  if (funcs.length === 1) return funcs[0];
+
+  return funcs.reduce(
+    (a, b) =>
+      (...args) =>
+        a(b(...args))
+  );
+}
+
+//applyMiddleware(...middlewares)(createStore)(reducer, preloadedState, enhancer);
+// middle receive a store a its argument and return a new dispatch
+export function applyMiddleware(...middlewares) {
+  return (createStore) => {
+    return (...args) => {
+      const store = createStore(...args);
+      let { dispatch } = store;
+      const middlewareAPI = {
+        dispatch: (action) => dispatch(action),
+        getState: store.getState,
+      };
+
+      const chains = middlewares.map((middleware) => middleware(middlewareAPI));
+      dispatch = compose(...chains)(store.dispatch);
+
+      return {
+        ...store,
+        dispatch,
+      };
+    };
+  };
 }
